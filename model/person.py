@@ -1,4 +1,3 @@
-from model.relationship import relationship
 
 class person:
 

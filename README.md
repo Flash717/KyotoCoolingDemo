@@ -31,6 +31,7 @@ Requires python3 to be installed.
 - Clone repo locally (`git clone https://github.com/Flash717/KyotoCoolingDemo.git`)
 - Run `pip install -r requirements.txt` to install required python libraries
 - Run `python app.py` to start http-server on localhost port 8081
+- Run `pip install -e . && pytest` for unit tests
 
 ---
 

@@ -1,5 +1,4 @@
 from model.person import person
-from model.relationship import relationship
 
 class personlist:
 
@@ -8,7 +7,6 @@ class personlist:
         self._personGraph = {}
 
     def loadRelationships(self, filename):
-        response = []
         with open(filename, 'r') as fp:
             line = fp.readline()
             while line:
@@ -19,16 +17,13 @@ class personlist:
                 for p in self._personList:
                     if p.id == id:
                         p.addConnections(relList)
-                for i in relList:
-                    response.append(relationship(id, i))
                 line = fp.readline()
-                
+
         # now that we have loaded the relationships we can build the graph
         self.buildGraph()
 
-        return response
-
     def buildGraph(self):
+        self._personGraph = {}
         for i in self._personList:
             self._personGraph[i.id] = i.connections
 

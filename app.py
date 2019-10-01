@@ -1,7 +1,6 @@
 from flask import Flask, request
 from model.person import person
 from model.personlist import personlist
-from model.relationship import relationship
 
 import json
 
