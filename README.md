@@ -26,7 +26,7 @@ Create an API Server with the following functionality:
 
 ---
 
-### Setup
+### Setup:
 Requires python3 to be installed.
 - Clone repo locally (`git clone https://github.com/Flash717/KyotoCoolingDemo.git`)
 - Run `pip install -r requirements.txt` to install required python libraries
@@ -34,7 +34,7 @@ Requires python3 to be installed.
 
 ---
 
-### Endpoints
+### Endpoints:
 - GET `/` -> show user stats (min and max connections)
 - GET `/user/<user_id>` -> show user information
 - GET `/user/<user_id>/connections?degree=<int>&allowLoops=<True/False>` -> shows connection information for user
