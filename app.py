@@ -1,25 +1,29 @@
 from flask import Flask, request
 from model.person import person
+from model.personlist import personlist
 from model.relationship import relationship
 
 import json
 
 app = Flask(__name__)
 
-app.personList = []
-app.relationshipList = []
-app.personGraph = {}
-
 @app.route('/')
 def index():
     return json.dumps({
-        'max': getMax(),
-        'min': getMin()
+        'max': app.personList.getMax(),
+        'min': app.personList.getMin()
     })
 
 @app.route('/user/<user_id>')
 def getUser(user_id = None):
-    return str(getUserById(user_id))
+    if not user_id or not app.personList.getUserById(user_id):
+        return 'User with id {0} not found'.format(user_id), 404
+    result = app.personList.getUserById(user_id)
+    return json.dumps({
+        'id': result.id,
+        'name': result.name,
+        'connections': list(result.connections)
+    })
 
 @app.route('/user/<user_id>/connections')
 def getUserConnections(user_id):
@@ -34,9 +38,17 @@ def getUserConnections(user_id):
     degree = int(degree)
     user_id = int(user_id)
     allowLoops = allowLoops.lower() == 'true'
+    if not app.personList.getUserById(user_id):
+        return 'User with id {0} not found'.format(user_id), 404
 
-    connections = getConnections(user_id, degree, allowLoops)
-    return str(connections.get(degree))
+    connections = app.personList.getConnections(user_id, degree, allowLoops)
+
+    return json.dumps({
+        'user_id': user_id,
+        'degree': degree,
+        'connections': list(connections.get(degree)),
+        'connection_count': len(connections.get(degree))
+    })
 
 @app.route('/user/<user_id>/introduction/<other_id>')
 def getUserIntroduction(user_id, other_id):
@@ -46,8 +58,16 @@ def getUserIntroduction(user_id, other_id):
         return 'Invalid value for user_id', 400
     user_id = int(user_id)
     other_id = int(other_id)
-    result = introductions(app.personGraph, user_id, other_id)
-    return ' -> '.join(str(i) for i in result)
+    if not app.personList.getUserById(user_id):
+        return 'User with id {0} not found'.format(user_id), 404
+    if not app.personList.getUserById(other_id):
+        return 'User with id {0} not found'.format(other_id), 404
+    result = app.personList.getIntroductions(user_id, other_id)
+    return json.dumps({
+        'user_a': user_id,
+        'user_b': other_id,
+        'connection_chain': list(result)
+    })
 
 @app.route('/user/<user_id>/common/<other_id>')
 def getUserCommonalities(user_id, other_id):
@@ -57,68 +77,21 @@ def getUserCommonalities(user_id, other_id):
         return 'Invalid value for user_id', 400
     user_id = int(user_id)
     other_id = int(other_id)
-    user_a = getUserById(user_id)
-    user_b = getUserById(other_id)
-    result = list(set(user_a.connections) & set(user_b.connections))
-    return str(result)
+    if not app.personList.getUserById(user_id):
+        return 'User with id {0} not found'.format(user_id), 404
+    if not app.personList.getUserById(other_id):
+        return 'User with id {0} not found'.format(other_id), 404
+    result = app.personList.getCommonalities(user_id, other_id)
+    return json.dumps({
+        'user_a': user_id,
+        'user_b': other_id,
+        'common_connections': list(result)
+    })
 
 def initApp():
-    app.personList = person.loadPersons('Person.txt')
-    app.relationshipList = person.loadRelationships(app.personList, 'Relationship.txt')
-    app.personGraph = person.buildGraph(app.personList)
-
-def getUserById(id):
-    for i in app.personList:
-        if int(i.id) == int(id):
-            return i
-    return person(0, 'N/A')
-
-def getConnections(user_id, degree=1, allowLoops=False):
-    level = 0
-    connections = {0: set([user_id])}
-    allConnections = set([user_id])
-    while level < degree:
-        level += 1
-        connections[level] = set()
-        for i in connections[level-1]:
-            p = getUserById(i)
-            for j in p.connections:
-                if not j in allConnections or allowLoops:
-                    connections[level].add(j)
-                    allConnections.add(j)
-    return connections
-
-def introductions(graph, start, end):
-    queue = [[start]]
-    visited = set()
-
-    while queue:
-        path = queue.pop(0)
-        vertex = path[-1]
-
-        if vertex == end:
-            return path
-        elif vertex not in visited:
-            for current_neighbour in graph.get(vertex, []):
-                new_path = list(path)
-                new_path.append(current_neighbour)
-                queue.append(new_path)
-
-            visited.add(vertex)
-
-def getMax():
-    maxVal = max([len(x.connections) for x in app.personList])
-    return { 
-        'id': [x.id for x in app.personList if len(x.connections) == maxVal],
-        'count': maxVal
-    }
-
-def getMin():
-    minVal = min([len(x.connections) for x in app.personList])
-    return {
-        'id': [x.id for x in app.personList if len(x.connections) == minVal],
-        'count': minVal
-    }
+    # initialization of the person list, relationships and relationship-graph (load files)
+    app.personList = personlist.createFromFile('resources/Person.txt')
+    app.personList.loadRelationships('resources/Relationship.txt')
 
 if __name__ == '__main__':
     initApp()
